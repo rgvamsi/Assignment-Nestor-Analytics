@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom Browser Tabs</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+    #tabs-container {
+      display: flex;
+      list-style: none;
+      padding: 0;
+    }
+
+    .tab {
+      padding: 10px;
+      background-color: #eee;
+      cursor: pointer;
+      margin-right: 5px;
+      position: relative;
+    }
+
+    .tab input {
+      width: 150px;
+    }
+
+    .tab-content {
+      display: none;
+      border: 1px solid #ddd;
+      width: 100%;
+      height: 300px;
+    }
+
+    .close-btn {
+      position: absolute;
+      right: 5px;
+      top: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div>
+  <ul id="tabs-container"></ul>
+  <button id="add-tab-btn">+</button>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script>
+  // Model
+  const tabsModel = {
+    tabs: [],
+    currentTab: null,
+  };
+
+  // View
+  const tabsView = {
+    renderTabs: function () {
+      const tabsContainer = $('#tabs-container');
+      tabsContainer.empty();
+
+      tabsModel.tabs.forEach((tab, index) => {
+        const tabElement = $('<li class="tab"></li>');
+        tabElement.text(`Tab ${index + 1}`);
+        const inputField = $(`<input type="text" placeholder="Enter URL">`);
+        const closeBtn = $('<span class="close-btn">X</span>');
+
+        tabElement.append(inputField, closeBtn);
+        tabsContainer.append(tabElement);
+
+        const tabContent = $(`<div class="tab-content"></div>`);
+        tabContent.attr('id', `tab-${index}`);
+        tabContent.appendTo('body');
+
+        tab.tabElement = tabElement;
+        tab.inputField = inputField;
+        tab.content = tabContent;
+        tab.closeBtn = closeBtn;
+
+        inputField.keypress(function (e) {
+          if (e.which === 13) {
+            tabsController.loadUrl(tab, inputField.val());
+          }
+        });
+
+        tabElement.click(function () {
+          tabsController.switchTab(tab);
+        });
+
+        closeBtn.click(function (e) {
+          e.stopPropagation(); // Prevent tab switch
+          tabsController.closeTab(tab);
+        });
+      });
+    },
+
+    showTabContent: function (tab) {
+      $('.tab-content').hide();
+      tab.content.show();
+    },
+  };
+
+  // Controller
+  const tabsController = {
+    init: function () {
+      $('#add-tab-btn').click(this.addTab);
+      this.addTab();
+    },
+
+    addTab: function () {
+      const newTab = {
+        url: '',
+      };
+
+      tabsModel.tabs.push(newTab);
+      tabsView.renderTabs();
+      tabsController.switchTab(newTab);
+    },
+
+    switchTab: function (tab) {
+      tabsModel.currentTab = tab;
+      tabsView.showTabContent(tab);
+    },
+
+    closeTab: function (tab) {
+      const tabIndex = tabsModel.tabs.indexOf(tab);
+      tabsModel.tabs.splice(tabIndex, 1);
+
+      if (tabsModel.currentTab === tab) {
+        tabsModel.currentTab = null;
+      }
+
+      tabsView.renderTabs();
+
+      // Switch to the last tab if available
+      if (tabsModel.tabs.length > 0) {
+        tabsController.switchTab(tabsModel.tabs[tabsModel.tabs.length - 1]);
+      }
+    },
+
+    loadUrl: function (tab, url) {
+      tab.url = url;
+      tab.content.html(`<iframe src="${url}" width="100%" height="100%"></iframe>`);
+    },
+  };
+
+  // Initialize the application
+  $(document).ready(function () {
+    tabsController.init();
+  });
+</script>
+
+</body>
+</html>
